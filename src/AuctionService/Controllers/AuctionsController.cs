@@ -54,10 +54,7 @@ namespace AuctionService.Controllers
             // TODO: Add current user as seller
             auction.Seller = "test";
 
-            Console.WriteLine(auction.ToString());
-
             _context.Auctions.Add(auction);
-            _context.SaveChanges();
 
             var results = await _context.SaveChangesAsync() > 0;
 
@@ -65,5 +62,30 @@ namespace AuctionService.Controllers
 
             return CreatedAtAction(nameof(getAuctionById), new { auction.Id }, _mapper.Map<AuctionDto>(auction));
         }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateAction(Guid id, UpdateAuctionDto updateAuction) 
+        {
+
+            var auction = await _context.Auctions.Include(x => x.Item)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (auction == null) return NotFound();
+
+            // TODO: check seller === username 
+
+            auction.Item.Make = updateAuction.Make ?? auction.Item.Make;
+            auction.Item.Model = updateAuction.Model?? auction.Item.Model;
+            auction.Item.Color = updateAuction.Color ?? auction.Item.Color;
+            auction.Item.Year = updateAuction.Year ?? auction.Item.Year;
+            auction.Item.Year = updateAuction.Mileage?? auction.Item.Mileage;
+
+            var results = await _context.SaveChangesAsync() > 0;
+
+            if (!results) return BadRequest("Bad request, something failed, try updating later!");
+
+            return Ok();
+        }
+
     }
 }
