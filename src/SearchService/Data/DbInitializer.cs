@@ -1,6 +1,7 @@
 ﻿using MongoDB.Driver;
 using MongoDB.Entities;
 using SearchService.Models;
+using SearchService.Services;
 using System.Text.Json;
 
 namespace SearchService.Data
@@ -20,6 +21,17 @@ namespace SearchService.Data
 
             var count = await DB.CountAsync<Item>();
 
+            using var scrope = app.Services.CreateScope();
+
+            var httpClient = scrope.ServiceProvider.GetRequiredService<AuctionServiceHttpClient>();
+
+            var items = await httpClient.GetItemsForSearchDb();
+
+            Console.WriteLine(items.Count + " returned from the auction service.");
+
+            if(items.Count > 0) await DB.SaveAsync(items);
+
+            /**
             if(count == 0)
             {
                 Console.WriteLine("No data - will attempt to seed");
@@ -31,6 +43,7 @@ namespace SearchService.Data
 
                 await DB.SaveAsync(items);
             }
+            **/
         }
     }
 }
