@@ -3,6 +3,8 @@ using AuctionService.DTOs;
 using AuctionService.Entities;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,11 +16,13 @@ namespace AuctionService.Controllers
     {
         private readonly AuctionDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public Auctions(AuctionDbContext context, IMapper mapper)
+        public Auctions(AuctionDbContext context, IMapper mapper, IPublishEndpoint publishEndpoint)
         {
             this._context = context;
             this._mapper = mapper;
+            _publishEndpoint = publishEndpoint;
         }
 
         [HttpGet]
@@ -69,11 +73,15 @@ namespace AuctionService.Controllers
 
             _context.Auctions.Add(auction);
 
+            var newAuction = _mapper.Map<AuctionDto>(auction);
+
+            await _publishEndpoint.Publish(_mapper.Map<AuctionCreated>(newAuction));
+
             var results = await _context.SaveChangesAsync() > 0;
 
             if (!results) return BadRequest("Could not save an auction to the database");
 
-            return CreatedAtAction(nameof(getAuctionById), new { auction.Id }, _mapper.Map<AuctionDto>(auction));
+            return CreatedAtAction(nameof(getAuctionById), new { auction.Id }, newAuction);
         }
 
         [HttpPut("{id}")]
@@ -92,6 +100,12 @@ namespace AuctionService.Controllers
             auction.Item.Color = updateAuction.Color ?? auction.Item.Color;
             auction.Item.Year = updateAuction.Year ?? auction.Item.Year;
             auction.Item.Year = updateAuction.Mileage?? auction.Item.Mileage;
+
+            // MAPPING PROFILES
+            var auctionUpdated = _mapper.Map<AuctionUpdated>(auction);
+
+            // PUBLLISHING
+            await _publishEndpoint.Publish(auctionUpdated);
 
             var results = await _context.SaveChangesAsync() > 0;
 
