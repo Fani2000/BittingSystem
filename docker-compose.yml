@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres
@@ -20,6 +22,12 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:15672" ]
+      interval: 500s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     ports:
       - 5672:5672
       - 15672:15672
@@ -38,8 +46,10 @@ services:
     ports:
       - 7001:80
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   search-svc:
     image: fanidocker/search-svc:lastest
@@ -55,8 +65,10 @@ services:
     ports:
       - 7002:80
     depends_on:
-      - mongodb
-      - rabbitmq
+      mongodb:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   identity-svc:
     image: fanidocker/identity-svc:lastest
