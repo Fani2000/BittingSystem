@@ -49,7 +49,7 @@ services:
       postgres:
         condition: service_started
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
 
   search-svc:
     image: fanidocker/search-svc:lastest
@@ -68,7 +68,9 @@ services:
       mongodb:
         condition: service_started
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
+      auction-svc:
+        condition: service_started
 
   identity-svc:
     image: fanidocker/identity-svc:lastest

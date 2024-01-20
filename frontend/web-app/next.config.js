@@ -7,6 +7,9 @@ const nextConfig = {
                 hostname: '**'
             }
         ],
+    },
+    env: {
+        NEXTAUTH_SECRET: "secrets"
     }
 }
 
